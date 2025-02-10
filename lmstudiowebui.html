@@ -374,7 +374,7 @@
 <body>
   <div id="app">
     <div id="server-url-container">
-      <input type="text" id="server-url" placeholder="Enter LM Studio server address" />
+      <input type="text" id="server-url" placeholder="Enter LM Studio server address: (http[s]://host/port)" />
       <select id="model-select" disabled>
         <option value="">Select a model</option>
       </select>
@@ -633,13 +633,21 @@
     // Connect to server and populate model dropdown.
     async function connectToServer() {
       const serverUrl = serverUrlInput.value.trim();
+      console.log('serverUrl:', serverUrl);
+      if (!/^http:\/\/[a-zA-Z0-9.-]+:[0-9]+$/.test(serverUrl)) {
+        updateConnectionStatus('Invalid server address format. Use http://host:port', false);
+        return;
+      }
       if (!serverUrl) {
         updateConnectionStatus('Please enter a valid server address', false);
         return;
       }
+      console.log('serverUrl:', serverUrl, 'ok');
       try {
         updateConnectionStatus('Connecting...', false);
-        const response = await fetch(`${serverUrl}/v1/models`, {
+        const fetchUrl = `${serverUrl}/v1/models`;
+        console.log('fetching:', fetchUrl);
+        const response = await fetch(fetchUrl, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
         });
