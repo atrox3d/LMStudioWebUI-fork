@@ -55,6 +55,17 @@
       color: var(--text-color);
       font-size: 0.95rem;
     }
+    #server-port {
+      flex-grow: 1;
+      padding: 0.5rem 0.75rem;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+      border: none;
+      border-radius: var(--border-radius);
+      background-color: var(--background-color);
+      color: var(--text-color);
+      font-size: 0.95rem;
+    }
     /* Model selection dropdown */
     #model-select {
       padding: 0.5rem;
@@ -310,7 +321,7 @@
     @media (max-width: 480px) {
       .message { max-width: 90%; }
       #server-url-container { flex-direction: column; align-items: stretch; }
-      #server-url, #connect-button, #model-select { width: 100%; margin-right: 0; margin-bottom: 0.5rem; }
+      #server-port, #server-url, #connect-button, #model-select { width: 100%; margin-right: 0; margin-bottom: 0.5rem; }
       #chat-sidebar { display: none; }
     }
     @keyframes fadeIn {
@@ -374,7 +385,8 @@
 <body>
   <div id="app">
     <div id="server-url-container">
-      <input type="text" id="server-url" placeholder="Enter LM Studio server address: (http[s]://host/port)" />
+      <input type="text" id="server-url" placeholder="Enter LM Studio server address:" />
+      <input type="text" id="server-port" placeholder="Enter LM Studio server port:" />
       <select id="model-select" disabled>
         <option value="">Select a model</option>
       </select>
@@ -412,6 +424,7 @@
     const chatContainer = document.getElementById('chat-container');
     const userInput = document.getElementById('user-input');
     const serverUrlInput = document.getElementById('server-url');
+    const serverPortInput = document.getElementById('server-port');
     const connectButton = document.getElementById('connect-button');
     const connectionStatus = document.getElementById('connection-status');
     const sendButton = document.getElementById('send-button');
@@ -584,8 +597,10 @@
     // Ejects the currently loaded model.
     async function ejectCurrentModel(oldModel) {
       const serverUrl = serverUrlInput.value.trim();
+      const serverPort = serverPortInput.value.trim();
+      const endPoint = serverPort ? `http://${serverUrl}:${serverPort}` : serverUrl;
       try {
-        await fetch(`${serverUrl}/v1/model/eject`, {
+        await fetch(`${endPoint}/v1/model/eject`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ model: oldModel })
@@ -633,19 +648,21 @@
     // Connect to server and populate model dropdown.
     async function connectToServer() {
       const serverUrl = serverUrlInput.value.trim();
-      console.log('serverUrl:', serverUrl);
-      if (!/^http:\/\/[a-zA-Z0-9.-]+:[0-9]+$/.test(serverUrl)) {
-        updateConnectionStatus('Invalid server address format. Use http://host:port', false);
-        return;
-      }
+      const serverPort = serverPortInput.value.trim();
+      const endPoint = serverPort ? `http://${serverUrl}:${serverPort}` : serverUrl;
+      console.log('endpoint:', endPoint);
       if (!serverUrl) {
         updateConnectionStatus('Please enter a valid server address', false);
         return;
       }
-      console.log('serverUrl:', serverUrl, 'ok');
+      console.log('endPoint:', endPoint, 'ok');
+      if (!/^http:\/\/[a-zA-Z0-9.-]+:[0-9]+$/.test(endPoint)) {
+        updateConnectionStatus('Invalid server address format. Use http://host:port', false);
+        return;
+      }
       try {
         updateConnectionStatus('Connecting...', false);
-        const fetchUrl = `${serverUrl}/v1/models`;
+        const fetchUrl = `${endPoint}/v1/models`;
         console.log('fetching:', fetchUrl);
         const response = await fetch(fetchUrl, {
           method: 'GET',
@@ -734,11 +751,13 @@
       sendButton.disabled = true;
     
       const serverUrl = serverUrlInput.value.trim();
+      const serverPort = serverPortInput.value.trim();
+      const endPoint = serverPort ? `http://${serverUrl}:${serverPort}` : serverUrl;
       const startTime = performance.now();
       let accumulatedText = '';
     
       try {
-        const response = await fetch(`${serverUrl}/v1/chat/completions`, {
+        const response = await fetch(`${endPoint}/v1/chat/completions`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -850,7 +869,7 @@
     newChatButton.addEventListener('click', () => { createNewChat(); });
     toggleSidebarButton.addEventListener('click', () => { chatSidebar.classList.toggle('collapsed'); });
     
-    serverUrlInput.focus();
+    // serverUrlInput.focus();
   </script>
 </body>
 </html>
